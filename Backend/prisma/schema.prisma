@@ -12,18 +12,68 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Rol {
+  CIUDADANO
+  ADMIN
+}
+
 model Usuario {
-  id          Int      @id @default(autoincrement())
-  nombre      String
-  email       String   @unique
-  wallet      String?  @unique
-  did         String?  @unique
-  createdAt   DateTime @default(now())
+  id            Int           @id @default(autoincrement())
+  nombre        String
+  identificacion String?      @unique
+  email         String        @unique
+  password      String        @default("123456") // In a real app, don't use default plain text, but for migrating existing rows this prevents errors
+  rol           Rol           @default(CIUDADANO)
+  wallet        String?       @unique
+  did           String?       @unique
+  createdAt     DateTime      @default(now())
+
+  credenciales  Credencial[]
+  solicitudes   Solicitud[]
 }
 
 model Institucion {
-  id          Int      @id @default(autoincrement())
-  nombre      String
-  tipo        String
-  createdAt   DateTime @default(now())
+  id            Int           @id @default(autoincrement())
+  nombre        String
+  tipo          String
+  wallet        String?       @unique
+  createdAt     DateTime      @default(now())
+
+  credenciales  Credencial[]
+}
+
+model Credencial {
+  id              Int          @id @default(autoincrement())
+
+  titulo          String
+  descripcion     String
+
+  hashBlockchain  String?
+
+  emitidaEn       DateTime     @default(now())
+
+  usuarioId       Int
+  institucionId   Int
+
+  usuario         Usuario      @relation(fields: [usuarioId], references: [id])
+
+  institucion     Institucion  @relation(fields: [institucionId], references: [id])
+}
+
+enum EstadoSolicitud {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+}
+
+model Solicitud {
+  id              Int             @id @default(autoincrement())
+  tipoCredencial  String
+  datosJSON       String          @db.Text
+  estado          EstadoSolicitud @default(PENDIENTE)
+  hashTemporal    String?         @unique
+  usuarioId       Int
+  createdAt       DateTime        @default(now())
+
+  usuario         Usuario         @relation(fields: [usuarioId], references: [id])
 }
