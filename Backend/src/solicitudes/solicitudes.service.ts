@@ -52,7 +52,10 @@ export class SolicitudesService {
     let institucion = await this.prisma.institucion.findFirst();
     if (!institucion) {
       institucion = await this.prisma.institucion.create({
-        data: { nombre: 'Registro Civil del Ecuador', did: 'did:ssi:ec:1' }
+        data: {
+          nombre: 'Registro Civil del Ecuador',
+          tipo: 'Gubernamental',
+        },
       });
     }
 
