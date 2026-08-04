@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Send, FileCheck } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const CitizenRequest = ({ user }: { user: any }) => {
   const [formData, setFormData] = useState({
@@ -27,7 +28,7 @@ const CitizenRequest = ({ user }: { user: any }) => {
     const cedulaGenerada = generarCedula();
 
     try {
-      const res = await axios.post('http://localhost:3000/solicitudes', {
+      const res = await axios.post(`${API_BASE_URL}/solicitudes`, {
         usuarioId: user.id,
         tipoCredencial: 'Cédula de Identidad',
         datosJSON: JSON.stringify({ ...formData, cedula: cedulaGenerada })

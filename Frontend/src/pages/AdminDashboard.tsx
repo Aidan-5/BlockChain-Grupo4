@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { CheckCircle, Clock, FileText, ShieldCheck, Key } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const AdminDashboard = () => {
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
@@ -13,7 +14,7 @@ const AdminDashboard = () => {
 
   const fetchSolicitudes = async () => {
     try {
-      const res = await axios.get('http://localhost:3000/solicitudes/pendientes');
+      const res = await axios.get(`${API_BASE_URL}/solicitudes/pendientes`);
       setSolicitudes(res.data);
     } catch (e) {
       console.error('Error cargando solicitudes', e);
@@ -23,7 +24,7 @@ const AdminDashboard = () => {
   const aprobar = async (solicitud: any) => {
     setAprobando(solicitud.id);
     try {
-      const res = await axios.put(`http://localhost:3000/solicitudes/${solicitud.id}/aprobar`, {});
+      const res = await axios.put(`${API_BASE_URL}/solicitudes/${solicitud.id}/aprobar`, {});
       let datos: any = {};
       try { datos = JSON.parse(solicitud.datosJSON); } catch (e) {}
       setResultadoAprobacion({

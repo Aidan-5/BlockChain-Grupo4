@@ -1,153 +1,354 @@
 import 'package:flutter/material.dart';
 
-import '../../models/wallet_document.dart';
+import '../../models/session.dart';
+import '../../models/solicitud.dart';
+import '../../services/solicitudes_api.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
-import '../add_credential_screen.dart';
-import '../document_detail_screen.dart';
+import '../solicitar_identidad_screen.dart';
+import '../solicitud_detail_screen.dart';
 
-class WalletTab extends StatelessWidget {
-  const WalletTab({
-    super.key,
-    required this.documents,
-    required this.onDocumentAdded,
-  });
+/// Espejo de Frontend/src/pages/Wallet.tsx: separa las solicitudes
+/// aprobadas (credenciales activas) de las pendientes (en revisión),
+/// consumiendo `GET /solicitudes/usuario/:id`.
+class WalletTab extends StatefulWidget {
+  const WalletTab({super.key, this.solicitudesApi});
 
-  final List<WalletDocument> documents;
-  final ValueChanged<WalletDocument> onDocumentAdded;
+  final SolicitudesApi? solicitudesApi;
 
-  Future<void> _openAddCredential(BuildContext context) async {
-    final created = await Navigator.of(context).push<WalletDocument>(
-      MaterialPageRoute(builder: (_) => const AddCredentialScreen()),
-    );
-    if (created != null) onDocumentAdded(created);
+  @override
+  State<WalletTab> createState() => _WalletTabState();
+}
+
+class _WalletTabState extends State<WalletTab> {
+  late final SolicitudesApi _api = widget.solicitudesApi ?? SolicitudesApi();
+  late Future<List<Solicitud>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
   }
 
-  void _openDetail(BuildContext context, WalletDocument document) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => DocumentDetailScreen(document: document),
-      ),
+  Future<List<Solicitud>> _load() {
+    final usuario = AuthSession.instance.user!;
+    return _api.findByUsuario(usuario.id);
+  }
+
+  Future<void> _refresh() async {
+    final future = _load();
+    setState(() => _future = future);
+    await future;
+  }
+
+  Future<void> _openSolicitarIdentidad() async {
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const SolicitarIdentidadScreen()),
     );
+    if (created == true) _refresh();
   }
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          sliver: SliverToBoxAdapter(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Mi Billetera',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMain,
+    final usuario = AuthSession.instance.user!;
+
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: FutureBuilder<List<Solicitud>>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return _ErrorState(onRetry: _refresh);
+          }
+
+          final solicitudes = snapshot.data ?? [];
+          final aprobadas = solicitudes
+              .where((s) => s.estado == EstadoSolicitud.aprobada)
+              .toList();
+          final pendientes = solicitudes
+              .where((s) => s.estado == EstadoSolicitud.pendiente)
+              .toList();
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Mi Billetera',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textMain,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _openSolicitarIdentidad,
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: AppColors.primary,
+                    tooltip: 'Solicitar identidad',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Bienvenido, ${usuario.nombre}. Esta billetera es solo tuya.',
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              if (aprobadas.isNotEmpty) ...[
+                const _SectionTitle(
+                  icon: Icons.vpn_key_outlined,
+                  label: 'Credenciales Activas',
+                  color: AppColors.accent,
+                ),
+                const SizedBox(height: 12),
+                ...aprobadas.map(
+                  (s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _CredencialAprobadaCard(
+                      solicitud: s,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => SolicitudDetailScreen(solicitud: s),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _openAddCredential(context),
-                  icon: const Icon(Icons.add_circle_outline),
-                  color: AppColors.primary,
-                  tooltip: 'Añadir credencial',
+                const SizedBox(height: 12),
+              ],
+              if (pendientes.isNotEmpty) ...[
+                const _SectionTitle(
+                  label: 'Solicitudes en Revisión',
+                  color: AppColors.textMuted,
+                ),
+                const SizedBox(height: 12),
+                ...pendientes.map(
+                  (s) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _SolicitudPendienteRow(solicitud: s),
+                  ),
                 ),
               ],
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              'Toca cualquier documento para compartir tu identidad '
-              'mediante un código QR.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-            ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          sliver: SliverList.separated(
-            itemCount: documents.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              final document = documents[index];
-              return _DocumentCard(
-                document: document,
-                onTap: () => _openDetail(context, document),
-              );
-            },
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-          sliver: SliverToBoxAdapter(
-            child: OutlinedButton.icon(
-              onPressed: () => _openAddCredential(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Añadir credencial'),
-            ),
-          ),
+              if (solicitudes.isEmpty) _EmptyState(onSolicitar: _openSolicitarIdentidad),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: _openSolicitarIdentidad,
+                icon: const Icon(Icons.add),
+                label: const Text('Solicitar identidad'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({this.icon, required this.label, required this.color});
+
+  final IconData? icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 6),
+        ],
+        Text(
+          label,
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color),
         ),
       ],
     );
   }
 }
 
-class _DocumentCard extends StatelessWidget {
-  const _DocumentCard({required this.document, required this.onTap});
+class _CredencialAprobadaCard extends StatelessWidget {
+  const _CredencialAprobadaCard({required this.solicitud, required this.onTap});
 
-  final WalletDocument document;
+  final Solicitud solicitud;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return GlassCard(
       onTap: onTap,
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: document.color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(document.icon, color: document.color, size: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.badge_outlined, color: AppColors.accent, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    solicitud.tipoCredencial,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'APROBADA',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
+          const SizedBox(height: 12),
+          Text(solicitud.nombreCompleto, style: const TextStyle(color: AppColors.textMain)),
+          if (solicitud.cedula != null)
+            Text(
+              'Cédula ${solicitud.cedula}',
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+                fontFamily: 'monospace',
+              ),
+            ),
+          const SizedBox(height: 8),
+          const Row(
+            children: [
+              Icon(Icons.qr_code_rounded, size: 16, color: AppColors.textMuted),
+              SizedBox(width: 6),
+              Text(
+                'Toca para compartir con QR',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SolicitudPendienteRow extends StatelessWidget {
+  const _SolicitudPendienteRow({required this.solicitud});
+
+  final Solicitud solicitud;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  document.titulo,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMain,
-                  ),
-                ),
+                Text(solicitud.tipoCredencial, style: const TextStyle(color: AppColors.textMain)),
                 const SizedBox(height: 4),
                 Text(
-                  document.institucion,
+                  'Hash: ${(solicitud.hashTemporal ?? '').substring(0, (solicitud.hashTemporal ?? '').length.clamp(0, 20))}...',
                   style: const TextStyle(
-                    fontSize: 13,
                     color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontFamily: 'monospace',
                   ),
                 ),
               ],
             ),
           ),
-          const Icon(
-            Icons.qr_code_rounded,
-            color: AppColors.textMuted,
-            size: 22,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Text(
+              'En revisión',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFFB45309),
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.onSolicitar});
+
+  final VoidCallback onSolicitar;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        children: [
+          const Icon(Icons.info_outline, size: 40, color: AppColors.textMuted),
+          const SizedBox(height: 12),
+          const Text(
+            'Tu billetera está vacía',
+            style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textMain),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Solicita tu identidad oficial para empezar.',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off_outlined, size: 40, color: AppColors.textMuted),
+            const SizedBox(height: 12),
+            const Text(
+              'No se pudo cargar tu billetera',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textMain, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: const Text('Reintentar')),
+          ],
+        ),
       ),
     );
   }

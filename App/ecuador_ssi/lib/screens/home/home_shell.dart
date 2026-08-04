@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../data/mock_wallet_data.dart';
-import '../../models/wallet_document.dart';
 import 'ajustes_tab.dart';
 import 'escanear_tab.dart';
 import 'wallet_tab.dart';
@@ -17,19 +15,10 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
-  late final List<WalletDocument> _documents = MockWalletData.initialDocuments();
-
-  void _addDocument(WalletDocument document) {
-    setState(() => _documents.add(document));
-  }
 
   @override
   Widget build(BuildContext context) {
-    final tabs = [
-      WalletTab(documents: _documents, onDocumentAdded: _addDocument),
-      const EscanearTab(),
-      const AjustesTab(),
-    ];
+    final tabs = const [WalletTab(), EscanearTab(), AjustesTab()];
 
     return Scaffold(
       // Se construye solo la pestaña activa (en vez de IndexedStack) para

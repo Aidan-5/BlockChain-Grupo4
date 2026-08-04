@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
   const [email, setEmail] = useState('');
@@ -13,7 +14,7 @@ const Login = ({ onLogin }: { onLogin: (user: any) => void }) => {
     e.preventDefault();
     setError('');
     try {
-      const response = await axios.post('http://localhost:3000/auth/login', { email, password });
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
       localStorage.setItem('token', response.data.access_token);
       onLogin(response.data.user);
       

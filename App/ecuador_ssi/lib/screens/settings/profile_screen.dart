@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../data/mock_profile.dart';
+import '../../models/session.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 
@@ -9,8 +9,8 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final profile = MockProfile.citizen;
-    final initials = profile.nombreCompleto
+    final user = AuthSession.instance.user!;
+    final initials = user.nombre
         .trim()
         .split(RegExp(r'\s+'))
         .take(2)
@@ -41,7 +41,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    profile.nombreCompleto,
+                    user.nombre,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 18,
@@ -50,11 +50,8 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Cédula ${profile.cedula}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textMuted,
-                    ),
+                    user.rol == 'ADMIN' ? 'Administrador' : 'Ciudadano',
+                    style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
                   ),
                 ],
               ),
@@ -64,20 +61,9 @@ class ProfileScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _ProfileField(label: 'Correo electrónico', value: profile.email),
+                  _ProfileField(label: 'Correo electrónico', value: user.email),
                   const SizedBox(height: 16),
-                  _ProfileField(
-                    label: 'Fecha de nacimiento',
-                    value: _formatDate(profile.fechaNacimiento),
-                  ),
-                  const SizedBox(height: 16),
-                  _ProfileField(
-                    label: 'Wallet',
-                    value: profile.wallet,
-                    monospace: true,
-                  ),
-                  const SizedBox(height: 16),
-                  _ProfileField(label: 'DID', value: profile.did, monospace: true),
+                  _ProfileField(label: 'ID de usuario', value: '#${user.id}'),
                 ],
               ),
             ),
@@ -86,24 +72,13 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
-
-  static String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
-  }
 }
 
 class _ProfileField extends StatelessWidget {
-  const _ProfileField({
-    required this.label,
-    required this.value,
-    this.monospace = false,
-  });
+  const _ProfileField({required this.label, required this.value});
 
   final String label;
   final String value;
-  final bool monospace;
 
   @override
   Widget build(BuildContext context) {
@@ -115,14 +90,7 @@ class _ProfileField extends StatelessWidget {
           style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
         ),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: AppColors.textMain,
-            fontSize: 14,
-            fontFamily: monospace ? 'monospace' : null,
-          ),
-        ),
+        Text(value, style: const TextStyle(color: AppColors.textMain, fontSize: 14)),
       ],
     );
   }

@@ -1,23 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../data/mock_profile.dart';
-import '../models/citizen_profile.dart';
-import '../models/wallet_document.dart';
+import '../models/solicitud.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 
-/// Detalle de un documento/credencial. Desde aquí el ciudadano comparte su
-/// identidad generando un QR con divulgación selectiva: solo se muestra si
-/// es mayor de edad y su nombre, no el resto de sus datos personales.
-class DocumentDetailScreen extends StatelessWidget {
-  const DocumentDetailScreen({super.key, required this.document});
+/// Detalle de una credencial aprobada. El QR codifica `hashTemporal`, que
+/// es el mismo valor que Frontend/src/pages/Wallet.tsx muestra como
+/// "Clave Privada" — el backend no expone el hash real registrado en
+/// blockchain (`Credencial.hashBlockchain`) a través de este endpoint,
+/// solo al momento de la aprobación (ver SolicitudesService.approve()).
+class SolicitudDetailScreen extends StatelessWidget {
+  const SolicitudDetailScreen({super.key, required this.solicitud});
 
-  final WalletDocument document;
+  final Solicitud solicitud;
+
+  bool get _esMayorDeEdad {
+    final fecha = solicitud.fechaNacimiento;
+    if (fecha == null) return false;
+    final parsed = DateTime.tryParse(fecha);
+    if (parsed == null) return false;
+    final now = DateTime.now();
+    var edad = now.year - parsed.year;
+    final aunNoCumple =
+        now.month < parsed.month ||
+        (now.month == parsed.month && now.day < parsed.day);
+    if (aunNoCumple) edad--;
+    return edad >= 18;
+  }
 
   void _showQrSheet(BuildContext context) {
-    final profile = MockProfile.citizen;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -36,7 +48,7 @@ class DocumentDetailScreen extends StatelessWidget {
           children: [
             Center(
               child: Text(
-                'Compartir ${document.titulo}',
+                'Compartir ${solicitud.tipoCredencial}',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -54,7 +66,7 @@ class DocumentDetailScreen extends StatelessWidget {
                   border: Border.all(color: AppColors.glassBorder),
                 ),
                 child: QrImageView(
-                  data: document.hashBlockchain,
+                  data: solicitud.hashTemporal ?? solicitud.id.toString(),
                   size: 200,
                   backgroundColor: Colors.white,
                 ),
@@ -63,7 +75,10 @@ class DocumentDetailScreen extends StatelessWidget {
             const SizedBox(height: 20),
             const _PrivacyBadge(),
             const SizedBox(height: 16),
-            _DisclosedInfoBox(document: document, profile: profile),
+            _DisclosedInfoBox(
+              solicitud: solicitud,
+              esMayorDeEdad: _esMayorDeEdad,
+            ),
           ],
         ),
       ),
@@ -73,7 +88,7 @@ class DocumentDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(document.titulo)),
+      appBar: AppBar(title: Text(solicitud.tipoCredencial)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -87,12 +102,12 @@ class DocumentDetailScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: document.color.withValues(alpha: 0.12),
+                          color: AppColors.primary.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          document.icon,
-                          color: document.color,
+                        child: const Icon(
+                          Icons.badge_outlined,
+                          color: AppColors.primary,
                           size: 28,
                         ),
                       ),
@@ -102,16 +117,16 @@ class DocumentDetailScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              document.titulo,
+                              solicitud.tipoCredencial,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textMain,
                               ),
                             ),
-                            Text(
-                              document.institucion,
-                              style: const TextStyle(
+                            const Text(
+                              'Registro Civil del Ecuador',
+                              style: TextStyle(
                                 color: AppColors.textMuted,
                                 fontSize: 13,
                               ),
@@ -122,14 +137,22 @@ class DocumentDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const Divider(height: 32, color: AppColors.glassBorder),
-                  _DetailRow(
-                    label: 'Emitida el',
-                    value: _formatDate(document.emitidaEn),
-                  ),
+                  _DetailRow(label: 'Nombres completos', value: solicitud.nombreCompleto),
+                  if (solicitud.cedula != null) ...[
+                    const SizedBox(height: 12),
+                    _DetailRow(label: 'Cédula asignada', value: solicitud.cedula!),
+                  ],
+                  if (solicitud.lugarNacimiento != null) ...[
+                    const SizedBox(height: 12),
+                    _DetailRow(
+                      label: 'Lugar de nacimiento',
+                      value: solicitud.lugarNacimiento!,
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   _DetailRow(
-                    label: 'Hash en blockchain',
-                    value: document.hashBlockchain,
+                    label: 'Clave privada',
+                    value: solicitud.hashTemporal ?? '—',
                     monospace: true,
                   ),
                 ],
@@ -146,16 +169,8 @@ class DocumentDetailScreen extends StatelessWidget {
       ),
     );
   }
-
-  static String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
-  }
 }
 
-/// Indica que el QR solo revela lo mínimo necesario para verificar la
-/// identidad, no todos los datos del ciudadano.
 class _PrivacyBadge extends StatelessWidget {
   const _PrivacyBadge();
 
@@ -168,17 +183,17 @@ class _PrivacyBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.accent.withValues(alpha: 0.4)),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.lock_outline, size: 16, color: Color(0xFF8A6D00)),
-          const SizedBox(width: 8),
+          Icon(Icons.lock_outline, size: 16, color: Color(0xFF8A6D00)),
+          SizedBox(width: 8),
           Text(
             'Privacidad protegida',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF8A6D00),
+              color: Color(0xFF8A6D00),
             ),
           ),
         ],
@@ -187,19 +202,14 @@ class _PrivacyBadge extends StatelessWidget {
   }
 }
 
-/// Caja con la información mínima que se divulga al escanear el QR:
-/// mayoría de edad (no la fecha de nacimiento exacta), nombre completo y
-/// los datos propios de la credencial.
 class _DisclosedInfoBox extends StatelessWidget {
-  const _DisclosedInfoBox({required this.document, required this.profile});
+  const _DisclosedInfoBox({required this.solicitud, required this.esMayorDeEdad});
 
-  final WalletDocument document;
-  final CitizenProfile profile;
+  final Solicitud solicitud;
+  final bool esMayorDeEdad;
 
   @override
   Widget build(BuildContext context) {
-    final esMayorDeEdad = profile.esMayorDeEdad;
-
     return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,11 +243,9 @@ class _DisclosedInfoBox extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _DetailRow(label: 'Nombres completos', value: profile.nombreCompleto),
+          _DetailRow(label: 'Nombres completos', value: solicitud.nombreCompleto),
           const SizedBox(height: 12),
-          _DetailRow(label: 'Documento', value: document.titulo),
-          const SizedBox(height: 12),
-          _DetailRow(label: 'Institución emisora', value: document.institucion),
+          _DetailRow(label: 'Documento', value: solicitud.tipoCredencial),
         ],
       ),
     );

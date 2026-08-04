@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Search, ShieldCheck, ShieldAlert, Fingerprint } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const Verifier = () => {
   const [credentialId, setCredentialId] = useState('');
@@ -17,7 +18,7 @@ const Verifier = () => {
     setError('');
 
     try {
-      const response = await axios.get(`http://localhost:3000/credentials/${credentialId}/verify`);
+      const response = await axios.get(`${API_BASE_URL}/credentials/${credentialId}/verify`);
       setResult(response.data);
     } catch (err: any) {
       console.error('Verify error', err);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../models/session.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 import '../onboarding_screen.dart';
@@ -18,6 +19,7 @@ class AjustesTab extends StatelessWidget {
   }
 
   void _logout(BuildContext context) {
+    AuthSession.instance.clear();
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       (route) => false,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config/api';
 
 const Register = () => {
   const [formData, setFormData] = useState({ nombre: '', email: '', identificacion: '', password: '', codigoSecreto: '' });
@@ -12,7 +13,7 @@ const Register = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('http://localhost:3000/auth/register', formData);
+      const res = await axios.post(`${API_BASE_URL}/auth/register`, formData);
       setSuccess('Cuenta creada exitosamente. ' + (res.data.rol === 'ADMIN' ? '¡Eres Administrador!' : ''));
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: any) {

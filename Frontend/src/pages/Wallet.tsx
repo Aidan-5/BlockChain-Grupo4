@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { CreditCard, Hash, Calendar, CheckCircle, AlertCircle, Key, Lock } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const Wallet = ({ user }: { user: any }) => {
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
@@ -16,7 +17,7 @@ const Wallet = ({ user }: { user: any }) => {
 
   const fetchData = async () => {
     try {
-      const res = await axios.get(`http://localhost:3000/solicitudes/usuario/${user.id}`);
+      const res = await axios.get(`${API_BASE_URL}/solicitudes/usuario/${user.id}`);
       setSolicitudes(res.data);
     } catch (error) {
       console.error('Error fetching wallet data', error);

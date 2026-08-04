@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Send, FileText, CheckCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const Issuer = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -21,8 +22,8 @@ const Issuer = () => {
   const fetchData = async () => {
     try {
       const [usersRes, instRes] = await Promise.all([
-        axios.get('http://localhost:3000/users'),
-        axios.get('http://localhost:3000/institutions')
+        axios.get(`${API_BASE_URL}/users`),
+        axios.get(`${API_BASE_URL}/institutions`)
       ]);
       setUsers(usersRes.data);
       setInstitutions(instRes.data);
@@ -39,7 +40,7 @@ const Issuer = () => {
     setLoading(true);
     setSuccessMsg('');
     try {
-      await axios.post('http://localhost:3000/credentials', {
+      await axios.post(`${API_BASE_URL}/credentials`, {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
         usuarioId: parseInt(formData.usuarioId),
