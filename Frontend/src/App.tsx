@@ -53,12 +53,12 @@ function App() {
           {user ? (
             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               {user.rol === 'ADMIN' && (
-                <Link to="/admin" className="btn" style={{ background: 'var(--accent)', color: 'white', padding: '0.5rem 1rem' }}>
+                <Link to="/admin" className="btn btn-accent" style={{ padding: '0.5rem 1rem' }}>
                   Panel Admin
                 </Link>
               )}
               <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Hola, {user.nombre}</span>
-              <button onClick={handleLogout} className="btn btn-outline" style={{ padding: '0.5rem', borderColor: 'var(--error)', color: 'var(--error)' }}>
+              <button onClick={handleLogout} className="btn btn-danger" style={{ padding: '0.5rem' }}>
                 <LogOut size={18} />
               </button>
             </div>

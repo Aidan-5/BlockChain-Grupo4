@@ -54,7 +54,7 @@ const Wallet = ({ user }: { user: any }) => {
           {/* Credenciales aprobadas */}
           {aprobadas.length > 0 && (
             <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ color: 'var(--accent)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ color: 'var(--accent)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', textShadow: '0 0 20px var(--accent-glow)' }}>
                 <Key size={20} /> Credenciales Activas
               </h3>
               <div style={{ display: 'grid', gap: '1rem' }}>
@@ -62,13 +62,13 @@ const Wallet = ({ user }: { user: any }) => {
                   let datos: any = {};
                   try { datos = JSON.parse(s.datosJSON); } catch (e) {}
                   return (
-                    <div key={s.id} className="glass-card" style={{ border: '1px solid var(--accent)', background: 'rgba(16,185,129,0.05)' }}>
+                    <div key={s.id} className="glass-card" style={{ border: '1px solid var(--accent)', background: 'rgba(255,209,0,0.05)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <CreditCard size={20} color="var(--accent)" />
-                          <h4 style={{ color: 'var(--accent)', margin: 0 }}>{s.tipoCredencial}</h4>
+                          <h4 style={{ color: 'var(--accent)', margin: 0, textShadow: '0 0 12px var(--accent-glow)' }}>{s.tipoCredencial}</h4>
                         </div>
-                        <span style={{ background: 'rgba(16,185,129,0.2)', color: 'var(--accent)', padding: '0.2rem 0.75rem', borderRadius: '20px', fontSize: '0.8rem' }}>
+                        <span className="badge-accent">
                           ✓ APROBADA
                         </span>
                       </div>
@@ -129,7 +129,7 @@ const Wallet = ({ user }: { user: any }) => {
                         Hash: {s.hashTemporal?.slice(0, 28)}...
                       </p>
                     </div>
-                    <span style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '0.25rem 0.85rem', borderRadius: '20px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                    <span className="badge-warning">
                       ⏳ En revisión
                     </span>
                   </div>

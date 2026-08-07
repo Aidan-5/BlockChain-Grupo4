@@ -60,7 +60,7 @@ const Verifier = () => {
       )}
 
       {result && (
-        <div className="glass-card" style={{ border: result.validaEnBlockchain ? '1px solid var(--accent)' : '1px solid var(--error)' }}>
+        <div className="glass-card" style={{ border: result.validaEnBlockchain ? '1px solid var(--accent)' : '1px solid var(--error)', background: result.validaEnBlockchain ? 'rgba(255,209,0,0.04)' : 'var(--error-subtle)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1.5rem' }}>
             {result.validaEnBlockchain && result.hashCoincide ? (
               <ShieldCheck size={40} color="var(--accent)" />
@@ -68,7 +68,7 @@ const Verifier = () => {
               <ShieldAlert size={40} color="var(--error)" />
             )}
             <div>
-              <h3 style={{ color: result.validaEnBlockchain && result.hashCoincide ? 'var(--accent)' : 'var(--error)' }}>
+              <h3 style={{ color: result.validaEnBlockchain && result.hashCoincide ? 'var(--accent)' : 'var(--error)', textShadow: result.validaEnBlockchain && result.hashCoincide ? '0 0 16px var(--accent-glow)' : '0 0 16px var(--error-glow)' }}>
                 {result.validaEnBlockchain && result.hashCoincide ? 'CREDENCIAL AUTÉNTICA' : 'CREDENCIAL INVÁLIDA O ALTERADA'}
               </h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Verificación en Blockchain Híbrida completada</p>
@@ -90,7 +90,7 @@ const Verifier = () => {
             </div>
           </div>
 
-          <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+          <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--primary-subtle)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <Fingerprint size={14} /> Hash Criptográfico Registrado
             </p>

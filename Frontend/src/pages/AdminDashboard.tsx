@@ -64,10 +64,10 @@ const AdminDashboard = () => {
 
       {/* Key generated panel */}
       {resultadoAprobacion && (
-        <div className="glass-card" style={{ marginBottom: '2rem', border: '1px solid var(--accent)', background: 'rgba(16, 185, 129, 0.08)' }}>
+        <div className="glass-card" style={{ marginBottom: '2rem', border: '1px solid var(--accent)', background: 'rgba(255,209,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
             <Key size={24} color="var(--accent)" />
-            <h3 style={{ color: 'var(--accent)', margin: 0 }}>Solicitud Aprobada</h3>
+            <h3 style={{ color: 'var(--accent)', margin: 0, textShadow: '0 0 16px var(--accent-glow)' }}>Solicitud Aprobada</h3>
           </div>
           <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
             Ciudadano: <strong style={{ color: 'var(--text-main)' }}>{resultadoAprobacion.nombre}</strong>
@@ -76,7 +76,7 @@ const AdminDashboard = () => {
             Cédula Asignada: <span style={{ fontFamily: 'monospace', color: 'var(--primary)', fontSize: '1.1rem', letterSpacing: '0.1em' }}>{resultadoAprobacion.cedula}</span>
           </p>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-            ID Público de Credencial: <span style={{ background: 'rgba(16,185,129,0.2)', padding: '0.2rem 0.6rem', borderRadius: '4px', color: 'var(--accent)', fontWeight: 'bold' }}>{resultadoAprobacion.credencialId}</span> (Usa este número en el Verificador)
+            ID Público de Credencial: <span style={{ background: 'var(--accent-subtle)', padding: '0.2rem 0.6rem', borderRadius: '4px', color: 'var(--accent)', fontWeight: 'bold', border: '1px solid rgba(255,209,0,0.3)' }}>{resultadoAprobacion.credencialId}</span> (Usa este número en el Verificador)
           </p>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
             ✅ La clave privada fue enviada de forma segura a la Billetera del ciudadano. Solo él puede verla.
