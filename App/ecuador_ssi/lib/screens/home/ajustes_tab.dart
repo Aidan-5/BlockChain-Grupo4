@@ -11,7 +11,9 @@ import '../settings/security_screen.dart';
 import '../settings/usage_history_screen.dart';
 
 class AjustesTab extends StatelessWidget {
-  const AjustesTab({super.key});
+  const AjustesTab({super.key, required this.userId});
+
+  final int userId;
 
   void _open(BuildContext context, Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
@@ -45,7 +47,7 @@ class AjustesTab extends StatelessWidget {
               _SettingsTile(
                 icon: Icons.person_outline,
                 label: 'Mi perfil',
-                onTap: () => _open(context, const ProfileScreen()),
+                onTap: () => _open(context, ProfileScreen(userId: userId)),
               ),
               const _TileDivider(),
               _SettingsTile(

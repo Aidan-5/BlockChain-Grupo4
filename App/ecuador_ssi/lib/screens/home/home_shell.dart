@@ -9,7 +9,18 @@ import 'wallet_tab.dart';
 /// Contenedor principal luego del login/desbloqueo, con el menú inferior
 /// Billetera / Escanear / Ajustes pedido en el flujo.
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({
+    super.key,
+    this.userName = 'Ciudadano',
+    this.userEmail = '',
+    this.userRol = 'CIUDADANO',
+    this.userId = 0,
+  });
+
+  final String userName;
+  final String userEmail;
+  final String userRol;
+  final int userId;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -28,13 +39,10 @@ class _HomeShellState extends State<HomeShell> {
     final tabs = [
       WalletTab(documents: _documents, onDocumentAdded: _addDocument),
       const EscanearTab(),
-      const AjustesTab(),
+      AjustesTab(userId: widget.userId),
     ];
 
     return Scaffold(
-      // Se construye solo la pestaña activa (en vez de IndexedStack) para
-      // que EscanearTab no inicialice la cámara hasta que el usuario la
-      // abra explícitamente.
       body: SafeArea(child: tabs[_currentIndex]),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
