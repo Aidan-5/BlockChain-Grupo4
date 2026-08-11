@@ -23,6 +23,11 @@ export class CredentialsController {
     return this.credentialsService.verify(Number(id));
   }
 
+  @Get('usuario/:userId')
+  findByUser(@Param('userId') userId: string) {
+    return this.credentialsService.findByUser(Number(userId));
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.credentialsService.findOne(Number(id));

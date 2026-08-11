@@ -2,6 +2,32 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
 
+function calcularDigitoVerificadorEcuador(primeros9: string): number {
+  const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+  let suma = 0;
+
+  for (let i = 0; i < 9; i++) {
+    let valor = parseInt(primeros9[i], 10) * coeficientes[i];
+    if (valor >= 10) valor -= 9;
+    suma += valor;
+  }
+
+  const modulo = suma % 10;
+  return modulo === 0 ? 0 : 10 - modulo;
+}
+
+function generarCedulaEcuatorianaValida(provinciaCodigo?: string): string {
+  const prov = (provinciaCodigo && /^\d{2}$/.test(provinciaCodigo)) ? provinciaCodigo : '17';
+  const tercerDigito = Math.floor(Math.random() * 6).toString(); // 0 a 5 persona natural
+  let secuencial = '';
+  for (let i = 0; i < 6; i++) {
+    secuencial += Math.floor(Math.random() * 10).toString();
+  }
+  const primeros9 = prov + tercerDigito + secuencial;
+  const digitoVerificador = calcularDigitoVerificadorEcuador(primeros9);
+  return primeros9 + digitoVerificador.toString();
+}
+
 @Injectable()
 export class SolicitudesService {
   constructor(private prisma: PrismaService) {}
@@ -24,7 +50,15 @@ export class SolicitudesService {
   async findAllPending() {
     return this.prisma.solicitud.findMany({
       where: { estado: 'PENDIENTE' },
-      include: { usuario: true }
+      include: { usuario: true },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async findAllHistory() {
+    return this.prisma.solicitud.findMany({
+      include: { usuario: true },
+      orderBy: { createdAt: 'desc' }
     });
   }
 
@@ -33,19 +67,33 @@ export class SolicitudesService {
     if (!solicitud) throw new NotFoundException('Solicitud no encontrada');
     if (solicitud.estado !== 'PENDIENTE') throw new BadRequestException('La solicitud ya fue procesada');
 
-    let cedula = '0000000000';
+    let datosParsed: any = {};
     try {
-      const datosParsed = JSON.parse(solicitud.datosJSON);
-      if (datosParsed.cedula) cedula = datosParsed.cedula;
+      datosParsed = JSON.parse(solicitud.datosJSON);
     } catch (e) {}
+
+    let cedula = '';
+    if (datosParsed.cedula && datosParsed.cedula.length === 10) {
+      cedula = datosParsed.cedula;
+    } else {
+      // Generar cédula oficial basada en la provincia elegida por el ciudadano
+      cedula = generarCedulaEcuatorianaValida(datosParsed.provinciaCodigo);
+      datosParsed.cedula = cedula;
+    }
+
+    // Actualizar datosJSON con la cédula asignada
+    const datosActualizados = JSON.stringify(datosParsed);
 
     // Generate a private key mapping using the cedula
     const privateKey = crypto.createHash('sha256').update(cedula + 'SECRET_SALT_2026').digest('hex');
 
-    // Mark as approved
+    // Mark as approved and update datosJSON
     await this.prisma.solicitud.update({
       where: { id },
-      data: { estado: 'APROBADA' }
+      data: {
+        estado: 'APROBADA',
+        datosJSON: datosActualizados
+      }
     });
 
     // Generate the actual Credencial
@@ -65,7 +113,7 @@ export class SolicitudesService {
         descripcion: 'Emisión de identidad oficial',
         usuarioId: solicitud.usuarioId,
         institucionId: institucion.id,
-        hashBlockchain: privateKey, // In a real app we'd hash the privateKey, but here we use it directly as the hash registered
+        hashBlockchain: privateKey,
         emitidaEn: new Date()
       }
     });

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'auth/login_screen.dart';
 import 'home/home_shell.dart';
 
 class ProtectWalletScreen extends StatelessWidget {
@@ -10,6 +11,12 @@ class ProtectWalletScreen extends StatelessWidget {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const HomeShell()),
       (route) => false,
+    );
+  }
+
+  void _goToLogin(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
@@ -46,8 +53,8 @@ class ProtectWalletScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               const Text(
-                'Elige cómo quieres desbloquear tu billetera de identidad '
-                'cada vez que la abras.',
+                'Elige cómo quieres acceder a tu billetera de identidad '
+                'o inicia sesión con tu cuenta.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
@@ -68,9 +75,9 @@ class ProtectWalletScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => _goToHome(context),
-                  icon: const Icon(Icons.pin_outlined),
-                  label: const Text('Crear PIN'),
+                  onPressed: () => _goToLogin(context),
+                  icon: const Icon(Icons.login_rounded),
+                  label: const Text('Iniciar Sesión'),
                 ),
               ),
             ],

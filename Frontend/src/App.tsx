@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { Wallet as WalletIcon, ShieldCheck, Building2, LogIn, UserCircle, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { Wallet as WalletIcon, ShieldCheck, LogIn, UserCircle, LogOut } from 'lucide-react';
 import './App.css';
 
 import Wallet from './pages/Wallet';
 import Issuer from './pages/Issuer';
-import Verifier from './pages/Verifier';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
@@ -41,12 +40,6 @@ function App() {
               <UserCircle size={18} /> Solicitar Identidad
             </Link>
           )}
-
-          {user?.rol !== 'ADMIN' && (
-            <Link to="/verificador" className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>
-              <ShieldCheck size={18} /> Verificador
-            </Link>
-          )}
           
           <div style={{ width: '1px', height: '24px', background: 'var(--glass-border)', margin: '0 0.5rem' }}></div>
 
@@ -75,7 +68,6 @@ function App() {
           <Route path="/" element={<Wallet user={user} />} />
           <Route path="/solicitar" element={<CitizenRequest user={user} />} />
           <Route path="/emisor" element={<Issuer />} />
-          <Route path="/verificador" element={<Verifier />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/login" element={<Login onLogin={setUser} />} />
           <Route path="/registro" element={<Register />} />

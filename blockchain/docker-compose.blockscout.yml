@@ -1,23 +1,6 @@
 services:
 
-  # ─── 1. Nodo Hyperledger Besu ──────────────────────────────────
-  besu:
-    image: hyperledger/besu:latest
-    container_name: besu-node
-    restart: always
-    ports:
-      - "8545:8545"
-    volumes:
-      - ./data:/opt/besu/data
-    command:
-      - --network=dev
-      - --data-path=/opt/besu/data
-      - --rpc-http-enabled
-      - --rpc-http-host=0.0.0.0
-      - --rpc-http-api=ETH,NET,WEB3,TXPOOL
-      - --host-allowlist=*
-
-  # ─── 2. Base de datos PostgreSQL para Blockscout ───────────────
+  # ─── 1. Base de datos PostgreSQL para Blockscout ────────────────
   blockscout-db:
     image: postgres:15-alpine
     container_name: blockscout-db
@@ -26,24 +9,25 @@ services:
       POSTGRES_DB: blockscout
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
     volumes:
       - blockscout-db-data:/var/lib/postgresql/data
 
-  # ─── 3. Redis (cache requerido por Blockscout v6) ──────────────
+  # ─── 2. Redis (requerido por Blockscout v6+) ────────────────────
   blockscout-redis:
     image: redis:7-alpine
     container_name: blockscout-redis
     restart: always
 
-  # ─── 4. Backend indexador de Blockscout ────────────────────────
+  # ─── 3. Backend indexador de Blockscout (API + indexer) ─────────
   blockscout-backend:
-    image: blockscout/blockscout:latest
-    container_name: blockscout-backend
+    image: ghcr.io/blockscout/blockscout:latest
+    container_name: blockscout-web
     restart: always
     depends_on:
       - blockscout-db
       - blockscout-redis
-      - besu
     ports:
       - "4000:4000"
     command:
@@ -54,8 +38,8 @@ services:
         bin/blockscout start
     environment:
       ETHEREUM_JSONRPC_VARIANT: "besu"
-      ETHEREUM_JSONRPC_HTTP_URL: "http://besu:8545"
-      ETHEREUM_JSONRPC_TRACE_URL: "http://besu:8545"
+      ETHEREUM_JSONRPC_HTTP_URL: "http://host.docker.internal:8545"
+      ETHEREUM_JSONRPC_TRACE_URL: "http://host.docker.internal:8545"
       DATABASE_URL: "postgresql://postgres:postgrespassword@blockscout-db:5432/blockscout?ssl=false"
       REDIS_URL: "redis://blockscout-redis:6379"
       ECTO_USE_SSL: "false"
@@ -67,18 +51,16 @@ services:
       SHOW_PRICE_CHART: "false"
       SHOW_TXS_PER_SECOND: "true"
       DISABLE_EXCHANGE_RATES: "true"
-      SECRET_KEY_BASE: "ecuador_ssi_secret_key_base_replace_in_prod"
+      SECRET_KEY_BASE: "ecuador_ssi_secret_key_base_minimum_64_chars_paddddddddddddddddddddddddd"
       PORT: "4000"
       BLOCKSCOUT_HOST: "localhost"
       BLOCKSCOUT_PROTOCOL: "http"
       API_V1_READ_METHODS_DISABLED: "false"
       API_V1_WRITE_METHODS_DISABLED: "false"
-      # Frontend separado
-      NEXT_PUBLIC_API_HOST: "localhost"
-      NEXT_PUBLIC_API_PROTOCOL: "http"
-      NEXT_PUBLIC_API_BASE_PATH: "/"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
-  # ─── 5. Frontend visual de Blockscout ──────────────────────────
+  # ─── 4. Frontend visual de Blockscout v6 ────────────────────────
   blockscout-frontend:
     image: ghcr.io/blockscout/frontend:latest
     container_name: blockscout-frontend
@@ -102,6 +84,8 @@ services:
       NEXT_PUBLIC_NETWORK_CURRENCY_SYMBOL: "ETH"
       NEXT_PUBLIC_NETWORK_CURRENCY_DECIMALS: "18"
       NEXT_PUBLIC_IS_TESTNET: "true"
+      # NEXT_PUBLIC_FEATURED_NETWORKS: omitted (not used)
+      # NEXT_PUBLIC_OTHER_LINKS: omitted (not used)
 
 volumes:
   blockscout-db-data:

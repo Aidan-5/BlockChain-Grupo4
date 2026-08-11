@@ -1,22 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../data/mock_profile.dart';
 import '../models/citizen_profile.dart';
 import '../models/wallet_document.dart';
+import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 
 /// Detalle de un documento/credencial. Desde aquí el ciudadano comparte su
-/// identidad generando un QR con divulgación selectiva: solo se muestra si
-/// es mayor de edad y su nombre, no el resto de sus datos personales.
+/// identidad generando un QR con divulgación selectiva.
 class DocumentDetailScreen extends StatelessWidget {
-  const DocumentDetailScreen({super.key, required this.document});
+  const DocumentDetailScreen({
+    super.key,
+    required this.document,
+    this.userId = 0,
+  });
 
   final WalletDocument document;
+  final int userId;
 
-  void _showQrSheet(BuildContext context) {
-    final profile = MockProfile.citizen;
+  Future<void> _showQrSheet(BuildContext context) async {
+    final profile = userId > 0
+        ? await ProfileService.fetchProfile(userId)
+        : null;
+
+    if (!context.mounted) return;
 
     showModalBottomSheet(
       context: context,
@@ -194,11 +202,12 @@ class _DisclosedInfoBox extends StatelessWidget {
   const _DisclosedInfoBox({required this.document, required this.profile});
 
   final WalletDocument document;
-  final CitizenProfile profile;
+  final CitizenProfile? profile;
 
   @override
   Widget build(BuildContext context) {
-    final esMayorDeEdad = profile.esMayorDeEdad;
+    final esMayorDeEdad = profile?.esMayorDeEdad ?? true;
+    final nombreCompleto = profile?.nombreCompleto ?? 'Ciudadano Registrado';
 
     return GlassCard(
       child: Column(
@@ -233,7 +242,7 @@ class _DisclosedInfoBox extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _DetailRow(label: 'Nombres completos', value: profile.nombreCompleto),
+          _DetailRow(label: 'Nombres completos', value: nombreCompleto),
           const SizedBox(height: 12),
           _DetailRow(label: 'Documento', value: document.titulo),
           const SizedBox(height: 12),

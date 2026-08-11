@@ -32,22 +32,33 @@ export class BlockchainService implements OnModuleInit {
     const contractAddress =
       this.configService.get<string>('CONTRACT_ADDRESS');
 
-    if (!privateKey || !contractAddress) {
+    if (
+      !privateKey ||
+      !contractAddress ||
+      privateKey.includes('TU_CLAVE_PRIVADA') ||
+      contractAddress === '0x0000000000000000000000000000000000000000'
+    ) {
       this.logger.warn(
         'Blockchain no configurada. Defina BLOCKCHAIN_PRIVATE_KEY y CONTRACT_ADDRESS en .env',
       );
       return;
     }
 
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
-    this.wallet = new ethers.Wallet(privateKey, this.provider);
-    this.contract = new ethers.Contract(
-      contractAddress,
-      CREDENTIAL_REGISTRY_ABI,
-      this.wallet,
-    );
-    this.isConfigured = true;
-    this.logger.log(`Conectado a Besu en ${rpcUrl}`);
+    try {
+      this.provider = new ethers.JsonRpcProvider(rpcUrl);
+      this.wallet = new ethers.Wallet(privateKey, this.provider);
+      this.contract = new ethers.Contract(
+        contractAddress,
+        CREDENTIAL_REGISTRY_ABI,
+        this.wallet,
+      );
+      this.isConfigured = true;
+      this.logger.log(`Conectado a Besu en ${rpcUrl}`);
+    } catch (err: any) {
+      this.logger.warn(
+        `Error al inicializar la clave privada o contrato de Blockchain: ${err.message}. El backend continuará sin integración Blockchain en vivo.`,
+      );
+    }
   }
 
   isReady(): boolean {

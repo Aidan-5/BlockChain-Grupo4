@@ -37,7 +37,11 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      WalletTab(documents: _documents, onDocumentAdded: _addDocument),
+      WalletTab(
+        documents: _documents,
+        onDocumentAdded: _addDocument,
+        userId: widget.userId,
+      ),
       const EscanearTab(),
       AjustesTab(userId: widget.userId),
     ];

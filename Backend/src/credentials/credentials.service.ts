@@ -141,4 +141,14 @@ export class CredentialsService {
       usuario: credencial.usuario,
     };
   }
+
+  async findByUser(usuarioId: number) {
+    return this.prisma.credencial.findMany({
+      where: { usuarioId },
+      include: {
+        usuario: true,
+        institucion: true,
+      },
+    });
+  }
 }

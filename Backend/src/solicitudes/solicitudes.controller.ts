@@ -15,6 +15,11 @@ export class SolicitudesController {
     return this.solicitudesService.findAllPending();
   }
 
+  @Get('historial')
+  findAllHistory() {
+    return this.solicitudesService.findAllHistory();
+  }
+
   @Get('usuario/:id')
   findByUsuario(@Param('id') id: string) {
     return this.solicitudesService.findByUsuario(+id);

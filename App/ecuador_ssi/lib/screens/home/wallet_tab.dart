@@ -11,10 +11,12 @@ class WalletTab extends StatelessWidget {
     super.key,
     required this.documents,
     required this.onDocumentAdded,
+    this.userId = 0,
   });
 
   final List<WalletDocument> documents;
   final ValueChanged<WalletDocument> onDocumentAdded;
+  final int userId;
 
   Future<void> _openAddCredential(BuildContext context) async {
     final created = await Navigator.of(context).push<WalletDocument>(
@@ -26,7 +28,7 @@ class WalletTab extends StatelessWidget {
   void _openDetail(BuildContext context, WalletDocument document) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => DocumentDetailScreen(document: document),
+        builder: (_) => DocumentDetailScreen(document: document, userId: userId),
       ),
     );
   }
