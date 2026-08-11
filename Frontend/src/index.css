@@ -1,13 +1,45 @@
+/* =====================================================
+   Ecuador SSI — Design Tokens
+   Paleta: Bandera del Ecuador (Azul · Amarillo · Rojo)
+   ===================================================== */
 :root {
-  --primary: #3b82f6; /* Blue */
-  --primary-glow: rgba(59, 130, 246, 0.5);
-  --bg-color: #0f172a; /* Deep dark blue */
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --glass-bg: rgba(30, 41, 59, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --accent: #10b981; /* Emerald */
-  --error: #ef4444; /* Red */
+  /* Primario — Azul bandera */
+  --primary:        #0033A0;
+  --primary-light:  #1a4fc4;
+  --primary-dark:   #002280;
+  --primary-glow:   rgba(0, 51, 160, 0.40);
+  --primary-subtle: rgba(0, 51, 160, 0.12);
+
+  /* Acento — Amarillo bandera */
+  --accent:         #FFD100;
+  --accent-dark:    #c9a500;
+  --accent-text:    #7a5c00;
+  --accent-glow:    rgba(255, 209, 0, 0.35);
+  --accent-subtle:  rgba(255, 209, 0, 0.14);
+
+  /* Error / Destructivo — Rojo bandera */
+  --error:          #DA121A;
+  --error-light:    #e83d44;
+  --error-dark:     #a80e14;
+  --error-glow:     rgba(218, 18, 26, 0.35);
+  --error-subtle:   rgba(218, 18, 26, 0.12);
+
+  /* Superficie y texto — Modo claro (igual a la app Flutter) */
+  --bg-color:    #FFFFFF;
+  --bg-mid:      #F6F7FB;
+  --surface:     #FFFFFF;
+  --text-main:   #1E293B;
+  --text-muted:  #64748B;
+  --text-dim:    #94a3b8;
+
+  /* Bordes glass — claro */
+  --glass-bg:     rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 51, 160, 0.12);
+  --glass-border-strong: rgba(0, 51, 160, 0.28);
+
+  /* Verde de estado (aprobado/válido), independiente de la paleta bandera */
+  --success: #16a34a;
+  --accent-navy: #002280;
 }
 
 * {
@@ -18,15 +50,12 @@
 }
 
 body {
-  background-color: var(--bg-color);
+  background-color: #FFFFFF;
   color: var(--text-main);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.15), transparent 25%);
 }
 
 #root {
@@ -39,26 +68,26 @@ body {
 /* Glassmorphism Utilities */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 16px rgba(0, 51, 160, 0.08), 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
   padding: 1.5rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 2px 12px rgba(0, 51, 160, 0.07);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .glass-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 51, 160, 0.12);
+  border-color: var(--glass-border-strong);
 }
 
 /* Typography */
@@ -68,7 +97,7 @@ h1, h2, h3 {
 }
 
 .gradient-text {
-  background: linear-gradient(to right, #60a5fa, #34d399);
+  background: linear-gradient(110deg, #0033A0 0%, #1a4fc4 55%, #c9a500 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -92,24 +121,60 @@ h1, h2, h3 {
 
 .btn-primary {
   background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 14px var(--primary-glow);
+  color: #ffffff;
+  box-shadow: 0 4px 16px var(--primary-glow);
+  border: 1px solid transparent;
 }
 
 .btn-primary:hover {
-  background: #2563eb;
+  background: var(--primary-light);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px var(--primary-glow);
+  box-shadow: 0 6px 22px var(--primary-glow);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  background: var(--primary-dark);
+}
+
+/* Botón de acento — Amarillo bandera */
+.btn-accent {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+  box-shadow: 0 4px 16px var(--accent-glow);
+  border: 1px solid transparent;
+}
+
+.btn-accent:hover {
+  background: #ffe033;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px var(--accent-glow);
+}
+
+/* Botón destructivo — Rojo bandera */
+.btn-danger {
+  background: var(--error);
+  color: #ffffff;
+  box-shadow: 0 4px 16px var(--error-glow);
+  border: 1px solid transparent;
+}
+
+.btn-danger:hover {
+  background: var(--error-light);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px var(--error-glow);
 }
 
 .btn-outline {
   background: transparent;
   color: var(--text-main);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--glass-border-strong);
 }
 
 .btn-outline:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--primary-subtle);
+  border-color: var(--primary);
 }
 
 /* Inputs */
@@ -126,11 +191,11 @@ h1, h2, h3 {
 }
 
 .glass-input {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--surface);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
   padding: 0.75rem 1rem;
-  color: white;
+  color: var(--text-main);
   font-size: 1rem;
   transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
@@ -138,8 +203,8 @@ h1, h2, h3 {
 
 .glass-input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px var(--primary-subtle);
 }
 
 /* Layout Utilities */
@@ -160,3 +225,76 @@ h1, h2, h3 {
 .mb-4 { margin-bottom: 1rem; }
 .gap-2 { gap: 0.5rem; }
 .gap-4 { gap: 1rem; }
+
+/* ── Badges ─────────────────────────────── */
+/* Amarillo — acento / aprobado / privacidad */
+.badge-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid rgba(255, 209, 0, 0.35);
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Azul — primario / activo */
+.badge-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--primary-subtle);
+  color: #5c9dff;
+  border: 1px solid rgba(0, 80, 200, 0.35);
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Rojo — error / rechazado / alerta */
+.badge-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--error-subtle);
+  color: var(--error-light);
+  border: 1px solid rgba(218, 18, 26, 0.35);
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Amarillo neutro — en revisión */
+.badge-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 209, 0, 0.10);
+  color: #d4a800;
+  border: 1px solid rgba(255, 209, 0, 0.25);
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ── Scrollbar ───────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-mid); }
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 51, 160, 0.35);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* ── Selection ──────────────────────────── */
+::selection {
+  background: var(--primary-subtle);
+  color: var(--text-main);
+}

@@ -106,6 +106,6 @@ void main() {
     await tester.tap(find.text('Mi perfil'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Cédula ${'1723456789'}'), findsOneWidget);
+    expect(find.text('Inicia sesión con tu cuenta para ver los datos de tu perfil.'), findsOneWidget);
   });
 }

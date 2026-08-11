@@ -3,8 +3,18 @@ export const CREDENTIAL_REGISTRY_ABI = [
     anonymous: false,
     inputs: [
       { indexed: false, internalType: 'string', name: 'hash', type: 'string' },
-      { indexed: false, internalType: 'address', name: 'issuer', type: 'address' },
-      { indexed: false, internalType: 'uint256', name: 'timestamp', type: 'uint256' },
+      {
+        indexed: false,
+        internalType: 'address',
+        name: 'issuer',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'timestamp',
+        type: 'uint256',
+      },
     ],
     name: 'CredentialRegistered',
     type: 'event',

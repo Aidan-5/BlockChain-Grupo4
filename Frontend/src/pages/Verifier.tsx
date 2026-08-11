@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Search, ShieldCheck, ShieldAlert, Fingerprint } from 'lucide-react';
+import apiClient from '../config/axios';
 
 const Verifier = () => {
   const [credentialId, setCredentialId] = useState('');
@@ -17,7 +17,7 @@ const Verifier = () => {
     setError('');
 
     try {
-      const response = await axios.get(`http://localhost:3000/credentials/${credentialId}/verify`);
+      const response = await apiClient.get(`/credentials/${credentialId}/verify`);
       setResult(response.data);
     } catch (err: any) {
       console.error('Verify error', err);
@@ -60,15 +60,15 @@ const Verifier = () => {
       )}
 
       {result && (
-        <div className="glass-card" style={{ border: result.validaEnBlockchain ? '1px solid var(--accent)' : '1px solid var(--error)' }}>
+        <div className="glass-card" style={{ border: result.validaEnBlockchain ? '1px solid var(--success)' : '1px solid var(--error)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1.5rem' }}>
             {result.validaEnBlockchain && result.hashCoincide ? (
-              <ShieldCheck size={40} color="var(--accent)" />
+              <ShieldCheck size={40} color="var(--success)" />
             ) : (
               <ShieldAlert size={40} color="var(--error)" />
             )}
             <div>
-              <h3 style={{ color: result.validaEnBlockchain && result.hashCoincide ? 'var(--accent)' : 'var(--error)' }}>
+              <h3 style={{ color: result.validaEnBlockchain && result.hashCoincide ? 'var(--success)' : 'var(--error)' }}>
                 {result.validaEnBlockchain && result.hashCoincide ? 'CREDENCIAL AUTÉNTICA' : 'CREDENCIAL INVÁLIDA O ALTERADA'}
               </h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Verificación en Blockchain Híbrida completada</p>

@@ -26,28 +26,37 @@ export class BlockchainService implements OnModuleInit {
 
   onModuleInit() {
     const rpcUrl =
-      this.configService.get<string>('BESU_RPC_URL') ??
-      'http://127.0.0.1:8545';
+      this.configService.get<string>('BESU_RPC_URL') ?? 'http://127.0.0.1:8545';
     const privateKey = this.configService.get<string>('BLOCKCHAIN_PRIVATE_KEY');
-    const contractAddress =
-      this.configService.get<string>('CONTRACT_ADDRESS');
+    const contractAddress = this.configService.get<string>('CONTRACT_ADDRESS');
 
-    if (!privateKey || !contractAddress) {
+    if (
+      !privateKey ||
+      !contractAddress ||
+      privateKey.includes('TU_CLAVE_PRIVADA') ||
+      contractAddress === '0x0000000000000000000000000000000000000000'
+    ) {
       this.logger.warn(
         'Blockchain no configurada. Defina BLOCKCHAIN_PRIVATE_KEY y CONTRACT_ADDRESS en .env',
       );
       return;
     }
 
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
-    this.wallet = new ethers.Wallet(privateKey, this.provider);
-    this.contract = new ethers.Contract(
-      contractAddress,
-      CREDENTIAL_REGISTRY_ABI,
-      this.wallet,
-    );
-    this.isConfigured = true;
-    this.logger.log(`Conectado a Besu en ${rpcUrl}`);
+    try {
+      this.provider = new ethers.JsonRpcProvider(rpcUrl);
+      this.wallet = new ethers.Wallet(privateKey, this.provider);
+      this.contract = new ethers.Contract(
+        contractAddress,
+        CREDENTIAL_REGISTRY_ABI,
+        this.wallet,
+      );
+      this.isConfigured = true;
+      this.logger.log(`Conectado a Besu en ${rpcUrl}`);
+    } catch (err: any) {
+      this.logger.warn(
+        `Error al inicializar la clave privada o contrato de Blockchain: ${err.message}. El backend continuará sin integración Blockchain en vivo.`,
+      );
+    }
   }
 
   isReady(): boolean {
@@ -69,9 +78,7 @@ export class BlockchainService implements OnModuleInit {
     return { txHash: tx.hash };
   }
 
-  async verifyCredential(
-    hash: string,
-  ): Promise<BlockchainVerificationResult> {
+  async verifyCredential(hash: string): Promise<BlockchainVerificationResult> {
     this.ensureReady();
     const [valid, timestamp, issuer] =
       await this.contract!.verifyCredential(hash);

@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../services/scan_history_service.dart';
 import '../../theme/app_theme.dart';
+import '../scan_history_screen.dart';
 
 /// Escáner de QR de identidad. Usa la cámara del dispositivo para leer el
 /// código compartido por otra persona (ver DocumentDetailScreen).
@@ -46,7 +50,16 @@ class _EscanearTabState extends State<EscanearTab> {
 
     setState(() => _lastResult = value);
     _controller?.stop();
+    // No bloquea la UI: el resultado ya se muestra sin esperar a que se
+    // guarde en el historial local.
+    unawaited(ScanHistoryService.addScan(value));
     _showResultSheet(value);
+  }
+
+  void _openScanHistory() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ScanHistoryScreen()),
+    );
   }
 
   void _showResultSheet(String value) {
@@ -122,6 +135,23 @@ class _EscanearTabState extends State<EscanearTab> {
       children: [
         MobileScanner(controller: _controller, onDetect: _onDetect),
         _ScannerOverlay(),
+        Positioned(
+          top: 16,
+          right: 16,
+          child: SafeArea(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                onPressed: _openScanHistory,
+                icon: const Icon(Icons.history_rounded, color: Colors.white),
+                tooltip: 'Historial de escaneos',
+              ),
+            ),
+          ),
+        ),
         Positioned(
           left: 0,
           right: 0,

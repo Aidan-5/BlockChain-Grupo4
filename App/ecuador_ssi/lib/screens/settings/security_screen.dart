@@ -1,21 +1,61 @@
 import 'package:flutter/material.dart';
 
+import '../../services/biometric_auth_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 
-/// Preferencias de desbloqueo. Los interruptores solo reflejan estado local
-/// en esta primera versión — la validación real de huella/PIN se agrega
-/// cuando se conecte `local_auth` / `flutter_secure_storage`.
+/// Preferencias de desbloqueo. El interruptor de huella dispara un reto real
+/// contra `local_auth`; el de PIN sigue siendo solo estado local hasta que
+/// se agregue almacenamiento persistente para el PIN.
 class SecurityScreen extends StatefulWidget {
-  const SecurityScreen({super.key});
+  const SecurityScreen({super.key, this.biometricAuth});
+
+  final BiometricAuthService? biometricAuth;
 
   @override
   State<SecurityScreen> createState() => _SecurityScreenState();
 }
 
 class _SecurityScreenState extends State<SecurityScreen> {
-  bool _huellaActiva = true;
+  late final BiometricAuthService _biometricAuth =
+      widget.biometricAuth ?? BiometricAuthService();
+
+  bool _huellaActiva = false;
   bool _pinActivo = false;
+  bool _biometricSupported = true;
+  bool _checkingBiometric = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _biometricAuth.isAvailable().then((available) {
+      if (!mounted) return;
+      setState(() => _biometricSupported = available);
+    });
+  }
+
+  Future<void> _toggleHuella(bool value) async {
+    if (!value) {
+      setState(() => _huellaActiva = false);
+      return;
+    }
+
+    setState(() => _checkingBiometric = true);
+    final result = await _biometricAuth.authenticate(
+      'Confirma tu huella digital para activar el desbloqueo',
+    );
+    if (!mounted) return;
+    setState(() {
+      _checkingBiometric = false;
+      _huellaActiva = result.success;
+    });
+
+    if (!result.success && result.message != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message!)));
+    }
+  }
 
   Future<void> _changePin() async {
     final controller = TextEditingController();
@@ -70,12 +110,23 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 children: [
                   SwitchListTile(
                     value: _huellaActiva,
-                    onChanged: (value) => setState(() => _huellaActiva = value),
-                    secondary: const Icon(
-                      Icons.fingerprint,
-                      color: AppColors.primary,
-                    ),
+                    onChanged: _biometricSupported && !_checkingBiometric
+                        ? _toggleHuella
+                        : null,
+                    secondary: _checkingBiometric
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(
+                            Icons.fingerprint,
+                            color: AppColors.primary,
+                          ),
                     title: const Text('Usar huella digital'),
+                    subtitle: _biometricSupported
+                        ? null
+                        : const Text('No disponible en este dispositivo'),
                   ),
                   const Divider(height: 1, color: AppColors.glassBorder),
                   SwitchListTile(

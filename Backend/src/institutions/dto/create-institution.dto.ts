@@ -1,8 +1,10 @@
 import {
+  IsEmail,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
+  MinLength,
 } from 'class-validator';
 
 export class CreateInstitutionDto {
@@ -20,4 +22,12 @@ export class CreateInstitutionDto {
     message: 'wallet debe ser una dirección Ethereum válida (0x...)',
   })
   wallet?: string;
+
+  // Credenciales de acceso del Usuario (rol INSTITUCION) vinculado a esta institución
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
 }
