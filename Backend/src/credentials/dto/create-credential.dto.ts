@@ -13,7 +13,6 @@ export class CreateCredentialDto {
   @IsPositive()
   usuarioId: number;
 
-  @IsInt()
-  @IsPositive()
-  institucionId: number;
+  // institucionId NO se acepta del cliente: se deriva del JWT de la cuenta
+  // INSTITUCION autenticada (ver CredentialsController.create).
 }

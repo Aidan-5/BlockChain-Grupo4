@@ -1,0 +1,31 @@
+-- AlterTable
+ALTER TABLE `Credencial` ADD COLUMN `fechaCaducidad` DATETIME(3) NULL,
+    ADD COLUMN `firmaEmisorHash` VARCHAR(191) NULL;
+
+-- CreateTable
+CREATE TABLE `InstitucionAtributo` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `institucionId` INTEGER NOT NULL,
+    `atributo` ENUM('ESTADO_CIVIL', 'PORCENTAJE_DISCAPACIDAD', 'NUMERO_RUC', 'ESTADO_TRIBUTARIO_AL_DIA', 'LICENCIA_CATEGORIAS', 'SALDO_PUNTOS_LICENCIA', 'TIENE_BIENES_INMUEBLES', 'BIENES_LIBRES_GRAVAMEN', 'ANTECEDENTES_PENALES_LIMPIO', 'ESTATUS_SERVICIO_MILITAR', 'PERMISO_ARMAS_ACTIVO', 'TITULO_PRINCIPAL', 'NUMERO_REGISTRO_SENESCYT', 'ESTADO_AFILIACION_IESS', 'DERECHO_ATENCION_MEDICA') NOT NULL,
+
+    UNIQUE INDEX `InstitucionAtributo_institucionId_atributo_key`(`institucionId`, `atributo`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Tramite` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `institucionId` INTEGER NOT NULL,
+    `nombre` VARCHAR(191) NOT NULL,
+    `descripcion` VARCHAR(191) NULL,
+    `activo` BOOLEAN NOT NULL DEFAULT true,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `InstitucionAtributo` ADD CONSTRAINT `InstitucionAtributo_institucionId_fkey` FOREIGN KEY (`institucionId`) REFERENCES `Institucion`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Tramite` ADD CONSTRAINT `Tramite_institucionId_fkey` FOREIGN KEY (`institucionId`) REFERENCES `Institucion`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

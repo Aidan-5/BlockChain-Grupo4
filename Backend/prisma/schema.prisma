@@ -15,6 +15,7 @@ datasource db {
 enum Rol {
   CIUDADANO
   ADMIN
+  INSTITUCION
 }
 
 model Usuario {
@@ -26,10 +27,15 @@ model Usuario {
   rol           Rol           @default(CIUDADANO)
   wallet        String?       @unique
   did           String?       @unique
+  activo        Boolean       @default(true)
   createdAt     DateTime      @default(now())
+
+  institucionId Int?          @unique
+  institucion   Institucion?  @relation(fields: [institucionId], references: [id])
 
   credenciales  Credencial[]
   solicitudes   Solicitud[]
+  notificaciones Notificacion[]
 }
 
 model Institucion {
@@ -37,9 +43,52 @@ model Institucion {
   nombre        String
   tipo          String
   wallet        String?       @unique
+  activo        Boolean       @default(true)
   createdAt     DateTime      @default(now())
 
+  usuario       Usuario?
+
   credenciales  Credencial[]
+  solicitudes   Solicitud[]
+  atributos     InstitucionAtributo[]
+  tramites      Tramite[]
+}
+
+enum AtributoIdentidad {
+  ESTADO_CIVIL
+  PORCENTAJE_DISCAPACIDAD
+  NUMERO_RUC
+  ESTADO_TRIBUTARIO_AL_DIA
+  LICENCIA_CATEGORIAS
+  SALDO_PUNTOS_LICENCIA
+  TIENE_BIENES_INMUEBLES
+  BIENES_LIBRES_GRAVAMEN
+  ANTECEDENTES_PENALES_LIMPIO
+  ESTATUS_SERVICIO_MILITAR
+  PERMISO_ARMAS_ACTIVO
+  TITULO_PRINCIPAL
+  NUMERO_REGISTRO_SENESCYT
+  ESTADO_AFILIACION_IESS
+  DERECHO_ATENCION_MEDICA
+}
+
+model InstitucionAtributo {
+  id            Int               @id @default(autoincrement())
+  institucionId Int
+  atributo      AtributoIdentidad
+  institucion   Institucion       @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+
+  @@unique([institucionId, atributo])
+}
+
+model Tramite {
+  id            Int         @id @default(autoincrement())
+  institucionId Int
+  nombre        String
+  descripcion   String?
+  activo        Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  institucion   Institucion @relation(fields: [institucionId], references: [id], onDelete: Cascade)
 }
 
 model Credencial {
@@ -51,13 +100,17 @@ model Credencial {
   hashBlockchain  String?
 
   emitidaEn       DateTime     @default(now())
+  fechaCaducidad  DateTime?
+  firmaEmisorHash String?
 
   usuarioId       Int
   institucionId   Int
+  solicitudId     Int?         @unique
 
   usuario         Usuario      @relation(fields: [usuarioId], references: [id])
 
   institucion     Institucion  @relation(fields: [institucionId], references: [id])
+  solicitud       Solicitud?   @relation(fields: [solicitudId], references: [id])
 }
 
 enum EstadoSolicitud {
@@ -66,14 +119,32 @@ enum EstadoSolicitud {
   RECHAZADA
 }
 
+enum TipoIdentidad {
+  CEDULA
+  DISCAPACIDAD
+}
+
 model Solicitud {
   id              Int             @id @default(autoincrement())
-  tipoCredencial  String
+  tipoCredencial  TipoIdentidad
   datosJSON       String          @db.Text
   estado          EstadoSolicitud @default(PENDIENTE)
   hashTemporal    String?         @unique
   usuarioId       Int
+  institucionId   Int
   createdAt       DateTime        @default(now())
 
   usuario         Usuario         @relation(fields: [usuarioId], references: [id])
+  institucion     Institucion     @relation(fields: [institucionId], references: [id])
+  credencial      Credencial?
+}
+
+model Notificacion {
+  id                     Int      @id @default(autoincrement())
+  destinatarioUsuarioId  Int
+  destinatario           Usuario  @relation(fields: [destinatarioUsuarioId], references: [id], onDelete: Cascade)
+  titulo                 String
+  mensaje                String
+  leida                  Boolean  @default(false)
+  createdAt              DateTime @default(now())
 }

@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -7,12 +11,12 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
   ) {}
 
   async register(data: any) {
     const { nombre, email, password, identificacion, codigoSecreto } = data;
-    
+
     const existing = await this.prisma.usuario.findUnique({ where: { email } });
     if (existing) {
       throw new BadRequestException('El email ya está registrado');
@@ -27,19 +31,19 @@ export class AuthService {
         email,
         password: hashedPassword,
         identificacion: identificacion || null,
-        rol
-      }
+        rol,
+      },
     });
 
     return {
       message: 'Usuario registrado exitosamente',
-      rol: user.rol
+      rol: user.rol,
     };
   }
 
   async login(data: any) {
     const { email, password } = data;
-    
+
     const user = await this.prisma.usuario.findUnique({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Credenciales inválidas');
@@ -53,16 +57,32 @@ export class AuthService {
       }
     }
 
-    const payload = { sub: user.id, email: user.email, rol: user.rol };
-    
+    // Cuentas de ciudadanos suspendidas por un ADMIN, o cuentas de INSTITUCION
+    // cuya institución fue suspendida (activo se sincroniza en la misma
+    // transacción, ver InstitutionsService.update), no pueden loguearse.
+    if (!user.activo) {
+      throw new UnauthorizedException(
+        'Tu cuenta está suspendida. Contacta al administrador.',
+      );
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      rol: user.rol,
+      ...(user.rol === 'INSTITUCION'
+        ? { institucionId: user.institucionId }
+        : {}),
+    };
+
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
-        rol: user.rol
-      }
+        rol: user.rol,
+      },
     };
   }
 }

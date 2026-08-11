@@ -26,11 +26,9 @@ export class BlockchainService implements OnModuleInit {
 
   onModuleInit() {
     const rpcUrl =
-      this.configService.get<string>('BESU_RPC_URL') ??
-      'http://127.0.0.1:8545';
+      this.configService.get<string>('BESU_RPC_URL') ?? 'http://127.0.0.1:8545';
     const privateKey = this.configService.get<string>('BLOCKCHAIN_PRIVATE_KEY');
-    const contractAddress =
-      this.configService.get<string>('CONTRACT_ADDRESS');
+    const contractAddress = this.configService.get<string>('CONTRACT_ADDRESS');
 
     if (
       !privateKey ||
@@ -80,9 +78,7 @@ export class BlockchainService implements OnModuleInit {
     return { txHash: tx.hash };
   }
 
-  async verifyCredential(
-    hash: string,
-  ): Promise<BlockchainVerificationResult> {
+  async verifyCredential(hash: string): Promise<BlockchainVerificationResult> {
     this.ensureReady();
     const [valid, timestamp, issuer] =
       await this.contract!.verifyCredential(hash);

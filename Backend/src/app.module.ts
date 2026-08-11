@@ -10,6 +10,9 @@ import { WalletModule } from './wallet/wallet.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { SolicitudesModule } from './solicitudes/solicitudes.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { MailModule } from './mail/mail.module';
+import { TramitesModule } from './tramites/tramites.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { SolicitudesModule } from './solicitudes/solicitudes.module';
     PrismaModule,
     AuthModule,
     SolicitudesModule,
+    NotificationsModule,
+    MailModule,
+    TramitesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
