@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../services/session_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/glass_card.dart';
 import '../onboarding_screen.dart';
+import '../server_config_screen.dart';
 import '../settings/backup_screen.dart';
 import '../settings/help_screen.dart';
 import '../settings/language_screen.dart';
@@ -19,7 +21,9 @@ class AjustesTab extends StatelessWidget {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 
-  void _logout(BuildContext context) {
+  Future<void> _logout(BuildContext context) async {
+    await SessionService.clearSession();
+    if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       (route) => false,
@@ -79,6 +83,12 @@ class AjustesTab extends StatelessWidget {
                 icon: Icons.help_outline,
                 label: 'Ayuda y soporte',
                 onTap: () => _open(context, const HelpScreen()),
+              ),
+              const _TileDivider(),
+              _SettingsTile(
+                icon: Icons.settings_ethernet,
+                label: 'Configurar servidor',
+                onTap: () => _open(context, const ServerConfigScreen()),
               ),
             ],
           ),

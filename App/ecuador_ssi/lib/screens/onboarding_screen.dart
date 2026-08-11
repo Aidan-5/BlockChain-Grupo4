@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import 'protect_wallet_screen.dart';
+import 'auth/login_screen.dart';
+import 'server_config_screen.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -64,12 +65,24 @@ class OnboardingScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => const ProtectWalletScreen(),
+                        builder: (_) => const LoginScreen(),
                       ),
                     );
                   },
                   child: const Text('Continuar'),
                 ),
+              ),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ServerConfigScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.settings_ethernet, size: 18),
+                label: const Text('Configurar servidor'),
               ),
             ],
           ),

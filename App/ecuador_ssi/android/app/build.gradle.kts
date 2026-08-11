@@ -19,7 +19,9 @@ android {
         applicationId = "com.example.ecuador_ssi"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // local_auth 3.x drops support for Android API <24, so floor it here
+        // even if flutter.minSdkVersion is lower.
+        minSdk = maxOf(flutter.minSdkVersion, 24)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

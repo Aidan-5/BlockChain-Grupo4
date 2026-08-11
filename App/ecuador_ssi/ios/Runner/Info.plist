@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Ecuador SSI usa la cámara para escanear códigos QR de identidad.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Ecuador SSI usa Face ID para proteger el acceso a tu billetera de identidad.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

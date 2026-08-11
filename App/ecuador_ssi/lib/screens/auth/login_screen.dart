@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 import '../../theme/app_theme.dart';
-import '../home/home_shell.dart';
+import '../protect_wallet_screen.dart';
+import '../server_config_screen.dart';
 
 /// Pantalla de inicio de sesión que conecta con el backend NestJS.
-/// Reemplaza al botón "Crear PIN" de la pantalla de protección de billetera.
+/// Paso obligatorio del flujo de arranque: sin sesión válida no se puede
+/// llegar a la billetera. En éxito, [AuthService.login] ya persistió la
+/// sesión, así que aquí solo se navega hacia la configuración del segundo
+/// factor local (huella/PIN) con los datos reales del usuario.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -52,16 +57,17 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Login exitoso → ir a HomeShell con los datos del usuario
+    // Login exitoso → configurar el segundo factor local antes de entrar
     final user = result['user'] as Map<String, dynamic>;
+    final sessionUser = SessionUser(
+      id: user['id'] is int ? user['id'] as int : 0,
+      nombre: user['nombre'] as String? ?? 'Ciudadano',
+      email: user['email'] as String? ?? '',
+      rol: user['rol'] as String? ?? 'CIUDADANO',
+    );
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => HomeShell(
-          userName: user['nombre'] as String? ?? 'Ciudadano',
-          userEmail: user['email'] as String? ?? '',
-          userRol: user['rol'] as String? ?? 'CIUDADANO',
-          userId: user['id'] is int ? user['id'] as int : 0,
-        ),
+        builder: (_) => ProtectWalletScreen(sessionUser: sessionUser),
       ),
       (route) => false,
     );
@@ -76,6 +82,17 @@ class _LoginScreenState extends State<LoginScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_ethernet),
+            tooltip: 'Configurar servidor',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ServerConfigScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(

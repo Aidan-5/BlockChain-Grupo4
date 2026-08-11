@@ -3,13 +3,32 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/citizen_profile.dart';
 import '../models/wallet_document.dart';
+import '../services/institutions_service.dart';
 import '../services/profile_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 
+/// Claves de `Solicitud.datosJSON` que ya se muestran en otra parte del
+/// detalle (o no son un atributo propio de una institución) y no deben
+/// repetirse en "Datos registrados".
+const _clavesDatosPersonales = {
+  'nombres',
+  'apellidos',
+  'cedula',
+  'sexo',
+  'edad',
+  'lugarNacimiento',
+  'fechaNacimiento',
+  'provinciaCodigo',
+  'provinciaNombre',
+  'parroquia',
+};
+
 /// Detalle de un documento/credencial. Desde aquí el ciudadano comparte su
-/// identidad generando un QR con divulgación selectiva.
-class DocumentDetailScreen extends StatelessWidget {
+/// identidad generando un QR con divulgación selectiva, y puede revisar los
+/// atributos registrados junto con los trámites que ofrece la institución
+/// emisora.
+class DocumentDetailScreen extends StatefulWidget {
   const DocumentDetailScreen({
     super.key,
     required this.document,
@@ -19,9 +38,75 @@ class DocumentDetailScreen extends StatelessWidget {
   final WalletDocument document;
   final int userId;
 
+  @override
+  State<DocumentDetailScreen> createState() => _DocumentDetailScreenState();
+}
+
+class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
+  List<Map<String, dynamic>> _catalogo = [];
+  List<Map<String, dynamic>> _tramites = [];
+  bool _loadingExtras = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExtras();
+  }
+
+  Future<void> _loadExtras() async {
+    final institucionId = widget.document.institucionId;
+
+    final results = await Future.wait([
+      InstitutionsService.fetchAtributosCatalogo(),
+      (institucionId != null && institucionId > 0)
+          ? InstitutionsService.fetchTramites(institucionId)
+          : Future.value(<Map<String, dynamic>>[]),
+    ]);
+
+    if (!mounted) return;
+    setState(() {
+      _catalogo = results[0];
+      _tramites = results[1];
+      _loadingExtras = false;
+    });
+  }
+
+  /// Atributos de identidad propios de la institución (excluye los datos
+  /// personales básicos), traducidos a `{etiqueta: valor}` usando el
+  /// catálogo de atributos.
+  List<MapEntry<String, String>> get _atributosExtra {
+    final datos = widget.document.datosJSON;
+    if (datos == null) return [];
+
+    final entries = <MapEntry<String, String>>[];
+    for (final item in datos.entries) {
+      if (_clavesDatosPersonales.contains(item.key)) continue;
+
+      Map<String, dynamic>? meta;
+      for (final candidato in _catalogo) {
+        if (candidato['clave'] == item.key) {
+          meta = candidato;
+          break;
+        }
+      }
+      if (meta == null) continue;
+
+      final etiqueta = meta['etiqueta'] as String? ?? item.key;
+      String valor;
+      if (meta['tipo'] == 'BOOLEAN') {
+        valor = (item.value == true || item.value == 'true') ? 'Sí' : 'No';
+      } else {
+        valor = item.value?.toString() ?? '';
+      }
+      entries.add(MapEntry(etiqueta, valor));
+    }
+    return entries;
+  }
+
   Future<void> _showQrSheet(BuildContext context) async {
-    final profile = userId > 0
-        ? await ProfileService.fetchProfile(userId)
+    final document = widget.document;
+    final profile = widget.userId > 0
+        ? await ProfileService.fetchProfile(widget.userId)
         : null;
 
     if (!context.mounted) return;
@@ -80,6 +165,9 @@ class DocumentDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final document = widget.document;
+    final atributosExtra = _atributosExtra;
+
     return Scaffold(
       appBar: AppBar(title: Text(document.titulo)),
       body: SafeArea(
@@ -143,6 +231,24 @@ class DocumentDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
+            if (_loadingExtras) ...[
+              const SizedBox(height: 20),
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              ),
+            ] else ...[
+              if (atributosExtra.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                _AtributosCard(atributos: atributosExtra),
+              ],
+              if (_tramites.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                _TramitesCard(tramites: _tramites),
+              ],
+            ],
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () => _showQrSheet(context),
@@ -249,6 +355,119 @@ class _DisclosedInfoBox extends StatelessWidget {
           _DetailRow(label: 'Institución emisora', value: document.institucion),
         ],
       ),
+    );
+  }
+}
+
+/// Muestra los atributos de identidad propios de la institución que el
+/// ciudadano llenó al solicitar esta credencial (ver
+/// `_DocumentDetailScreenState._atributosExtra`).
+class _AtributosCard extends StatelessWidget {
+  const _AtributosCard({required this.atributos});
+
+  final List<MapEntry<String, String>> atributos;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Datos registrados',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < atributos.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            _DetailRow(
+              label: atributos[i].key,
+              value: atributos[i].value,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Muestra los trámites activos que ofrece la institución emisora de esta
+/// credencial (`GET /institutions/:institucionId/tramites`).
+class _TramitesCard extends StatelessWidget {
+  const _TramitesCard({required this.tramites});
+
+  final List<Map<String, dynamic>> tramites;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.assignment_outlined,
+                size: 16,
+                color: AppColors.textMuted,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Trámites disponibles',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
+                  letterSpacing: 0.4,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          for (var i = 0; i < tramites.length; i++) ...[
+            if (i > 0) const SizedBox(height: 12),
+            _TramiteRow(tramite: tramites[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TramiteRow extends StatelessWidget {
+  const _TramiteRow({required this.tramite});
+
+  final Map<String, dynamic> tramite;
+
+  @override
+  Widget build(BuildContext context) {
+    final nombre = tramite['nombre'] as String? ?? 'Trámite';
+    final descripcion = tramite['descripcion'] as String?;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          nombre,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textMain,
+          ),
+        ),
+        if (descripcion != null && descripcion.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            descripcion,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -3,24 +3,32 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/citizen_profile.dart';
+import 'api_config_service.dart';
+import 'session_service.dart';
 
 class ProfileService {
-  // En emulador Android, 10.0.2.2 apunta al localhost del PC host
-  static const String _baseUrl = 'http://10.0.2.2:3000';
-
   static Future<CitizenProfile?> fetchProfile(int userId) async {
     if (userId <= 0) return null;
 
     try {
+      final baseUrl = await ApiConfigService.getBaseUrl();
+      final token = await SessionService.getToken();
+      final headers = {
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
       final userResponse = await http
-          .get(Uri.parse('$_baseUrl/users/$userId'))
+          .get(Uri.parse('$baseUrl/users/$userId'), headers: headers)
           .timeout(const Duration(seconds: 10));
 
       if (userResponse.statusCode != 200) return null;
 
       final user = jsonDecode(userResponse.body) as Map<String, dynamic>;
       final solicitudesResponse = await http
-          .get(Uri.parse('$_baseUrl/solicitudes/usuario/$userId'))
+          .get(
+            Uri.parse('$baseUrl/solicitudes/usuario/$userId'),
+            headers: headers,
+          )
           .timeout(const Duration(seconds: 10));
 
       Map<String, dynamic> datos = {};

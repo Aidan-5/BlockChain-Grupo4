@@ -1,23 +1,55 @@
 import 'package:flutter/material.dart';
 
+import '../services/biometric_auth_service.dart';
+import '../services/session_service.dart';
 import '../theme/app_theme.dart';
-import 'auth/login_screen.dart';
-import 'home/home_shell.dart';
+import 'home_router.dart';
 
-class ProtectWalletScreen extends StatelessWidget {
-  const ProtectWalletScreen({super.key});
+/// Paso de configuración del segundo factor local (huella/PIN), mostrado
+/// justo después de un login exitoso contra el backend. Requiere el
+/// [SessionUser] recién autenticado para poder resolver, vía
+/// [homeScreenFor], la pantalla principal correcta según su rol.
+class ProtectWalletScreen extends StatefulWidget {
+  const ProtectWalletScreen({
+    super.key,
+    required this.sessionUser,
+    this.biometricAuth,
+  });
 
-  void _goToHome(BuildContext context) {
+  final SessionUser sessionUser;
+  final BiometricAuthService? biometricAuth;
+
+  @override
+  State<ProtectWalletScreen> createState() => _ProtectWalletScreenState();
+}
+
+class _ProtectWalletScreenState extends State<ProtectWalletScreen> {
+  late final BiometricAuthService _biometricAuth =
+      widget.biometricAuth ?? BiometricAuthService();
+  bool _authenticating = false;
+
+  void _goToHome() {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeShell()),
+      MaterialPageRoute(builder: (_) => homeScreenFor(widget.sessionUser)),
       (route) => false,
     );
   }
 
-  void _goToLogin(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+  Future<void> _useFingerprint() async {
+    setState(() => _authenticating = true);
+    final result = await _biometricAuth.authenticate(
+      'Confirma tu huella digital para acceder a tu billetera',
     );
+    if (!mounted) return;
+    setState(() => _authenticating = false);
+
+    if (result.success) {
+      _goToHome();
+    } else if (result.message != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result.message!)));
+    }
   }
 
   @override
@@ -66,8 +98,17 @@ class ProtectWalletScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _goToHome(context),
-                  icon: const Icon(Icons.fingerprint),
+                  onPressed: _authenticating ? null : _useFingerprint,
+                  icon: _authenticating
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.fingerprint),
                   label: const Text('Usar huella digital'),
                 ),
               ),
@@ -75,9 +116,9 @@ class ProtectWalletScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => _goToLogin(context),
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('Iniciar Sesión'),
+                  onPressed: _goToHome,
+                  icon: const Icon(Icons.pin_outlined),
+                  label: const Text('Crear PIN'),
                 ),
               ),
             ],
