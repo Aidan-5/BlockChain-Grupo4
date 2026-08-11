@@ -1,36 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Send, FileText, CheckCircle } from 'lucide-react';
+import apiClient from '../config/axios';
 
+// Emisión de credenciales por parte de una INSTITUCION autenticada. La
+// institución emisora ya no se elige en un combo: el backend la deriva del
+// JWT (institucionId) de la sesión actual, así que este formulario solo pide
+// el ciudadano titular y los datos de la credencial.
 const Issuer = () => {
   const [users, setUsers] = useState<any[]>([]);
-  const [institutions, setInstitutions] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
     usuarioId: '',
-    institucionId: ''
   });
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
-    fetchData();
+    fetchUsers();
   }, []);
 
-  const fetchData = async () => {
+  const fetchUsers = async () => {
     try {
-      const [usersRes, instRes] = await Promise.all([
-        axios.get('http://localhost:3000/users'),
-        axios.get('http://localhost:3000/institutions')
-      ]);
-      setUsers(usersRes.data);
-      setInstitutions(instRes.data);
-      if(instRes.data.length > 0) {
-        setFormData(prev => ({...prev, institucionId: instRes.data[0].id}));
-      }
+      const res = await apiClient.get('/users');
+      setUsers(res.data);
     } catch (error) {
-      console.error('Error fetching data for issuer form', error);
+      console.error('Error fetching users for issuer form', error);
     }
   };
 
@@ -39,11 +34,10 @@ const Issuer = () => {
     setLoading(true);
     setSuccessMsg('');
     try {
-      await axios.post('http://localhost:3000/credentials', {
+      await apiClient.post('/credentials', {
         titulo: formData.titulo,
         descripcion: formData.descripcion,
         usuarioId: parseInt(formData.usuarioId),
-        institucionId: parseInt(formData.institucionId)
       });
       setSuccessMsg('¡Credencial emitida y registrada en Blockchain con éxito!');
       setFormData({ ...formData, titulo: '', descripcion: '', usuarioId: '' });
@@ -58,37 +52,23 @@ const Issuer = () => {
   return (
     <div className="container" style={{ maxWidth: '800px' }}>
       <h2 className="gradient-text" style={{ fontSize: '2rem', marginBottom: '2rem' }}>Dashboard de Emisión</h2>
-      
+
       <div className="glass-panel" style={{ padding: '2rem' }}>
         <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <FileText size={20} color="var(--primary)" /> Nueva Credencial Verificable
         </h3>
-        
+
         {successMsg && (
-          <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid var(--accent)', padding: '1rem', borderRadius: '8px', color: 'var(--accent)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ background: 'rgba(22, 163, 74, 0.1)', border: '1px solid var(--success)', padding: '1rem', borderRadius: '8px', color: 'var(--success)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <CheckCircle size={20} /> {successMsg}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="input-group">
-            <label>Institución Emisora</label>
-            <select 
-              className="glass-input" 
-              value={formData.institucionId}
-              onChange={(e) => setFormData({...formData, institucionId: e.target.value})}
-              required
-            >
-              {institutions.map(inst => (
-                <option key={inst.id} value={inst.id} style={{ color: 'black' }}>{inst.nombre}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="input-group">
             <label>Ciudadano (Titular)</label>
-            <select 
-              className="glass-input" 
+            <select
+              className="glass-input"
               value={formData.usuarioId}
               onChange={(e) => setFormData({...formData, usuarioId: e.target.value})}
               required
@@ -102,9 +82,9 @@ const Issuer = () => {
 
           <div className="input-group">
             <label>Título de la Credencial</label>
-            <input 
-              type="text" 
-              className="glass-input" 
+            <input
+              type="text"
+              className="glass-input"
               placeholder="Ej. Certificado de Vacunación"
               value={formData.titulo}
               onChange={(e) => setFormData({...formData, titulo: e.target.value})}
@@ -114,9 +94,9 @@ const Issuer = () => {
 
           <div className="input-group">
             <label>Descripción / Datos Adicionales</label>
-            <textarea 
-              className="glass-input" 
-              rows={3} 
+            <textarea
+              className="glass-input"
+              rows={3}
               placeholder="Detalles de la credencial..."
               value={formData.descripcion}
               onChange={(e) => setFormData({...formData, descripcion: e.target.value})}

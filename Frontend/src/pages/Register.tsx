@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({ nombre: '', email: '', identificacion: '', password: '', codigoSecreto: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
@@ -39,7 +41,35 @@ const Register = () => {
           </div>
           <div className="input-group">
             <label>Contraseña</label>
-            <input type="password" className="glass-input" onChange={e => setFormData({...formData, password: e.target.value})} required />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="glass-input"
+                onChange={e => setFormData({...formData, password: e.target.value})}
+                style={{ paddingRight: '2.75rem' }}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)'
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
           
           <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>Registrarse</button>

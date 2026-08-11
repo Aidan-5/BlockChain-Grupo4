@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
 import { Send, FileCheck, HelpCircle, MapPin, Info, X, ShieldCheck, Clock } from 'lucide-react';
 import { PROVINCIAS_ECUADOR } from '../data/provincias';
+import apiClient from '../config/axios';
 
 const CitizenRequest = ({ user }: { user: any }) => {
   const [formData, setFormData] = useState({
@@ -11,9 +11,70 @@ const CitizenRequest = ({ user }: { user: any }) => {
     sexo: 'Hombre',
   });
 
+  // Institución y tipo de identidad a solicitar
+  const [instituciones, setInstituciones] = useState<any[]>([]);
+  const [loadingInstituciones, setLoadingInstituciones] = useState(true);
+  const [institucionId, setInstitucionId] = useState('');
+  const [tipoCredencial, setTipoCredencial] = useState<'CEDULA' | 'DISCAPACIDAD'>('CEDULA');
+
+  // Catálogo completo de atributos de identidad (clave -> {etiqueta, tipo}) y
+  // los valores que el ciudadano llena para los atributos que la institución
+  // seleccionada haya elegido (institucion.atributos).
+  const [atributosCatalogo, setAtributosCatalogo] = useState<Record<string, { clave: string; etiqueta: string; tipo: 'STRING' | 'BOOLEAN' }>>({});
+  const [atributosValues, setAtributosValues] = useState<Record<string, string>>({});
+
   // Provincia y Parroquia de Nacimiento
   const [selectedProvinciaCodigo, setSelectedProvinciaCodigo] = useState('17'); // 17 Pichincha por defecto
   const [selectedParroquia, setSelectedParroquia] = useState('Quito - Iñaquito');
+
+  useEffect(() => {
+    const fetchInstituciones = async () => {
+      setLoadingInstituciones(true);
+      try {
+        const res = await apiClient.get('/institutions');
+        setInstituciones(res.data);
+        if (res.data.length > 0) {
+          setInstitucionId(String(res.data[0].id));
+        }
+      } catch (e) {
+        console.error('Error cargando instituciones', e);
+      } finally {
+        setLoadingInstituciones(false);
+      }
+    };
+    fetchInstituciones();
+  }, []);
+
+  useEffect(() => {
+    const fetchAtributosCatalogo = async () => {
+      try {
+        const res = await apiClient.get('/institutions/atributos-catalogo');
+        const catalogo: Record<string, { clave: string; etiqueta: string; tipo: 'STRING' | 'BOOLEAN' }> = {};
+        for (const attr of res.data) {
+          catalogo[attr.clave] = attr;
+        }
+        setAtributosCatalogo(catalogo);
+      } catch (e) {
+        console.error('Error cargando catálogo de atributos', e);
+      }
+    };
+    fetchAtributosCatalogo();
+  }, []);
+
+  // Institución actualmente seleccionada (para leer sus atributos requeridos).
+  const institucionActual = useMemo(
+    () => instituciones.find(inst => String(inst.id) === institucionId),
+    [instituciones, institucionId]
+  );
+
+  const atributosInstitucion: string[] = institucionActual?.atributos ?? [];
+
+  // Si el ciudadano cambia de institución, se limpian los valores ya
+  // ingresados para no enviar datos de atributos que ya no aplican.
+  const handleInstitucionChange = (nuevoId: string) => {
+    setInstitucionId(nuevoId);
+    setAtributosValues({});
+  };
 
   // Control de Modal informativo
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -53,22 +114,24 @@ const CitizenRequest = ({ user }: { user: any }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return setError('Debes iniciar sesión para solicitar una identidad');
+    if (!institucionId) return setError('Selecciona una institución para tu solicitud');
     setError('');
     setIsSubmitting(true);
 
     const lugarNacimientoCompleto = `Parroquia ${selectedParroquia}, Prov. ${provinciaActual.nombre} (Código ${selectedProvinciaCodigo})`;
 
     try {
-      const res = await axios.post('http://localhost:3000/solicitudes', {
-        usuarioId: user.id,
-        tipoCredencial: 'Cédula de Identidad',
+      const res = await apiClient.post('/solicitudes', {
+        tipoCredencial,
+        institucionId: Number(institucionId),
         datosJSON: JSON.stringify({
           ...formData,
           edad: edadCalculada.toString(),
           provinciaCodigo: selectedProvinciaCodigo,
           provinciaNombre: provinciaActual.nombre,
           parroquia: selectedParroquia,
-          lugarNacimiento: lugarNacimientoCompleto
+          lugarNacimiento: lugarNacimientoCompleto,
+          ...atributosValues
         })
       });
 
@@ -79,6 +142,7 @@ const CitizenRequest = ({ user }: { user: any }) => {
       });
 
       setFormData({ nombres: '', apellidos: '', fechaNacimiento: '', sexo: 'Hombre' });
+      setAtributosValues({});
     } catch (e: any) {
       setError(e.response?.data?.message || 'Error al enviar la solicitud a la red');
     } finally {
@@ -178,6 +242,99 @@ const CitizenRequest = ({ user }: { user: any }) => {
         )}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Institución y Tipo de Identidad */}
+          <div>
+            <h4 style={{ color: 'var(--primary)', marginBottom: '1rem', fontSize: '1.05rem', fontWeight: 600 }}>
+              Institución y Tipo de Identidad
+            </h4>
+            {!loadingInstituciones && instituciones.length === 0 ? (
+              <div style={{
+                background: 'var(--error-subtle)',
+                border: '1px solid var(--error)',
+                color: 'var(--error)',
+                padding: '1rem',
+                borderRadius: '10px',
+                fontSize: '0.9rem'
+              }}>
+                No hay instituciones disponibles todavía. Contacta al administrador para poder enviar tu solicitud.
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="input-group">
+                  <label>Institución</label>
+                  <select
+                    className="glass-input"
+                    value={institucionId}
+                    onChange={e => handleInstitucionChange(e.target.value)}
+                    disabled={loadingInstituciones}
+                    required
+                  >
+                    {loadingInstituciones && <option value="">Cargando instituciones...</option>}
+                    {!loadingInstituciones && instituciones.map(inst => (
+                      <option key={inst.id} value={inst.id}>
+                        {inst.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Tipo de identidad</label>
+                  <select
+                    className="glass-input"
+                    value={tipoCredencial}
+                    onChange={e => setTipoCredencial(e.target.value as 'CEDULA' | 'DISCAPACIDAD')}
+                  >
+                    <option value="CEDULA">Cédula de Identidad (estándar)</option>
+                    <option value="DISCAPACIDAD">Carnet de Discapacidad</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Campos dinámicos requeridos por la institución seleccionada */}
+          {institucionActual && atributosInstitucion.length > 0 && (
+            <div>
+              <h4 style={{ color: 'var(--primary)', marginBottom: '1rem', fontSize: '1.05rem', fontWeight: 600 }}>
+                Datos requeridos por {institucionActual.nombre}
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                {atributosInstitucion.map(clave => {
+                  const attr = atributosCatalogo[clave];
+                  if (!attr) return null;
+                  return (
+                    <div className="input-group" key={clave}>
+                      <label>{attr.etiqueta}</label>
+                      {attr.tipo === 'BOOLEAN' ? (
+                        <select
+                          className="glass-input"
+                          value={atributosValues[clave] ?? ''}
+                          onChange={e => setAtributosValues({ ...atributosValues, [clave]: e.target.value })}
+                          required
+                        >
+                          <option value="" disabled>Selecciona una opción</option>
+                          <option value="true">Sí</option>
+                          <option value="false">No</option>
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          className="glass-input"
+                          value={atributosValues[clave] ?? ''}
+                          placeholder={attr.etiqueta}
+                          onChange={e => setAtributosValues({ ...atributosValues, [clave]: e.target.value })}
+                          required
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <hr style={{ borderColor: 'var(--glass-border)', margin: '0.25rem 0' }} />
+
           {/* Datos Personales */}
           <div>
             <h4 style={{ color: 'var(--primary)', marginBottom: '1rem', fontSize: '1.05rem', fontWeight: 600 }}>
@@ -308,7 +465,7 @@ const CitizenRequest = ({ user }: { user: any }) => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isSubmitting}
+            disabled={isSubmitting || instituciones.length === 0}
             style={{
               padding: '0.85rem',
               fontSize: '1rem',

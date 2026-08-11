@@ -36,6 +36,10 @@
   --glass-bg:     rgba(255, 255, 255, 0.85);
   --glass-border: rgba(0, 51, 160, 0.12);
   --glass-border-strong: rgba(0, 51, 160, 0.28);
+
+  /* Verde de estado (aprobado/válido), independiente de la paleta bandera */
+  --success: #16a34a;
+  --accent-navy: #002280;
 }
 
 * {
